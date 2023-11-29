@@ -287,7 +287,7 @@ class Transformer(nn.Module):
             )
             output_memory = self.enc_output_norm(self.enc_output(output_memory))
 
-            enc_outputs_class_unselected = self.enc_out_class_embed(output_memory)
+            enc_outputs_class_unselected = self.enc_out_class_embed(output_memory, encoded_text, text_token_mask)
 
             topk_logits = enc_outputs_class_unselected.max(-1)[0]
             enc_outputs_coord_unselected = (
