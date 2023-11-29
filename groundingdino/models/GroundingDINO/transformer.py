@@ -208,7 +208,7 @@ class Transformer(nn.Module):
     def init_ref_points(self, use_num_queries):
         self.refpoint_embed = nn.Embedding(use_num_queries, 4)
 
-    def forward(self, srcs, masks, refpoint_embed, pos_embeds, tgt, attn_mask, encoded_text, text_token_mask, position_ids, text_self_attention_masks):
+    def forward(self, srcs, masks, refpoint_embed, pos_embeds, tgt, attn_mask=None, text_dict=None):
         """
         Input:
             - srcs: List of multi features [bs, ci, hi, wi]
@@ -262,11 +262,11 @@ class Transformer(nn.Module):
             spatial_shapes=spatial_shapes,
             valid_ratios=valid_ratios,
             key_padding_mask=mask_flatten,
-            memory_text=encoded_text,
-            text_attention_mask=~text_token_mask,
+            memory_text=text_dict["encoded_text"],
+            text_attention_mask=~text_dict["text_token_mask"],
             # we ~ the mask . False means use the token; True means pad the token
-            position_ids=position_ids,
-            text_self_attention_masks=text_self_attention_masks,
+            position_ids=text_dict["position_ids"],
+            text_self_attention_masks=text_dict["text_self_attention_masks"],
         )
         #########################################################
         # End Encoder
@@ -276,7 +276,7 @@ class Transformer(nn.Module):
         # - enc_intermediate_output: None or (nenc+1, bs, nq, c) or (nenc, bs, nq, c)
         # - enc_intermediate_refpoints: None or (nenc+1, bs, nq, c) or (nenc, bs, nq, c)
         #########################################################
-        encoded_text = memory_text
+        text_dict["encoded_text"] = memory_text
         # if os.environ.get("SHILONG_AMP_INFNAN_DEBUG") == '1':
         #     if memory.isnan().any() | memory.isinf().any():
         #         import ipdb; ipdb.set_trace()
@@ -287,7 +287,10 @@ class Transformer(nn.Module):
             )
             output_memory = self.enc_output_norm(self.enc_output(output_memory))
 
-            enc_outputs_class_unselected = self.enc_out_class_embed(output_memory, encoded_text, text_token_mask)
+            if text_dict is not None:
+                enc_outputs_class_unselected = self.enc_out_class_embed(output_memory, text_dict)
+            else:
+                enc_outputs_class_unselected = self.enc_out_class_embed(output_memory)
 
             topk_logits = enc_outputs_class_unselected.max(-1)[0]
             enc_outputs_coord_unselected = (
@@ -368,8 +371,8 @@ class Transformer(nn.Module):
             spatial_shapes=spatial_shapes,
             valid_ratios=valid_ratios,
             tgt_mask=attn_mask,
-            memory_text=encoded_text,
-            text_attention_mask=~text_token_mask,
+            memory_text=text_dict["encoded_text"],
+            text_attention_mask=~text_dict["text_token_mask"],
             # we ~ the mask . False means use the token; True means pad the token
         )
         #########################################################

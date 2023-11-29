@@ -325,7 +325,7 @@ class GroundingDINO(nn.Module):
 
         input_query_bbox = input_query_label = attn_mask = dn_meta = None
         hs, reference, hs_enc, ref_enc, init_box_proposal = self.transformer(
-            srcs, masks, input_query_bbox, self.poss, input_query_label, attn_mask, encoded_text, text_token_mask, position_ids, text_self_attention_masks
+            srcs, masks, input_query_bbox, self.poss, input_query_label, attn_mask, text_dict
         )
 
         # deformable-detr-like anchor update

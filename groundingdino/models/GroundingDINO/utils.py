@@ -239,7 +239,7 @@ class ContrastiveEmbed(nn.Module):
         super().__init__()
         self.max_text_len = max_text_len
 
-    def forward(self, x, encoded_text, text_token_mask):
+    def forward(self, x, text_dict):
         """_summary_
 
         Args:
@@ -253,7 +253,11 @@ class ContrastiveEmbed(nn.Module):
         Returns:
             _type_: _description_
         """
-        y = encoded_text
+        assert isinstance(text_dict, dict)
+
+        y = text_dict["encoded_text"]
+        text_token_mask = text_dict["text_token_mask"]
+
         res = x @ y.transpose(-1, -2)
         res.masked_fill_(~text_token_mask[:, None, :], float("-inf"))
 
